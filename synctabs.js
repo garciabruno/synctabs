@@ -225,10 +225,14 @@ syncTab = function(_callbacks){
 				callbacks['global'][fn].apply(null, params);
 			}
 
-			if (constraints.slave && state['current'] == 'slave'){
+			if (constraints.slaves && state['current'] == 'slave'){
 				callbacks['global'][fn].apply(null, params);
 			}
 		}
+	};
+
+	this.register_function = function(name, fn){
+		callbacks['global'][name] = fn;
 	};
 
 	this.loop = function(){
@@ -239,7 +243,7 @@ syncTab = function(_callbacks){
 			if (self.get_key('master_id') != state['id']){
 				console.debug('Looks like I am no longer the master, I\'ll just be a slave');
 
-				state['current'] = 'slave';
+				self.become_slave();
 				return;
 			}
 
