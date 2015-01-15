@@ -9,14 +9,18 @@
 syncTab = function(_callbacks){
 	var callbacks = {
 		'master':{
-			'register': [],
-			'unregister': [],
+			'register': []
 		},
 		'slave':{
 			'register': [],
 			'unregister': []
-		}
+		},
+		'global': []
 	};
+
+	for (var role in _callbacks){
+		callbacks[role] = _callbacks[role];
+	}
 
 	var state = {
 		'current': '',
@@ -63,7 +67,13 @@ syncTab = function(_callbacks){
 		else{
 			localStorage.removeItem(keys[key]);
 		}
-	}
+	};
+
+	this.run_callback = function(role, callback){
+		if (typeof callbacks[role][callback] == 'function'){
+			callbacks[role][callback].apply();
+		}
+	};
 
 	this.get_slaves = function(){
 		return JSON.parse(self.get_key('slaves_ids'));
@@ -93,6 +103,8 @@ syncTab = function(_callbacks){
 			self.set_key('last_id', last_id + 1);
 			self.set_key('master_id', last_id + 1);
 		}
+
+		self.run_callback('master', 'register');
 	};
 
 	this.become_slave = function(){
@@ -122,6 +134,8 @@ syncTab = function(_callbacks){
 		self.set_key('last_id', last_id + 1);
 		self.set_key('slaves_ids', JSON.stringify(slaves_ids));
 		self.set_key('last_id_ts_' + state['id'], current_ts);
+
+		self.run_callback('slave', 'register');
 	};
 
 	this.remove_slave = function(slave_id){
@@ -139,6 +153,7 @@ syncTab = function(_callbacks){
 		}
 
 		self.set_key('slaves_ids', JSON.stringify(new_slaves));
+		self.run_callback('slave', 'unregister');
 	};
 
 	this.kick_master = function(){
@@ -150,6 +165,8 @@ syncTab = function(_callbacks){
 
 		self.set_key('last_master_ts', current_ts);
 		self.set_key('master_id', state['id']);
+
+		self.run_callback('master', 'register');
 	};
 
 	this.get_master_status = function(){
@@ -180,9 +197,36 @@ syncTab = function(_callbacks){
 
 				if ((current_ts - last_id_ts) > slave_latency){
 					console.debug('slave %d is not responding, kill him.', slaves_ids[i]);
+
 					self.remove_key('last_id_ts_' + slaves_ids[i]);
 					self.remove_slave(slaves_ids[i]);
 				}
+			}
+		}
+	};
+
+	this.call = function(fn, params, constraints){
+		if (typeof constraints == 'undefined'){
+			constraints = {
+				'master': true,
+				'slaves': true
+			}
+		}
+
+		if (typeof params == 'undefined'){
+			params = [];
+        }
+        else if (typeof params != 'object'){
+            params = [params];
+        }
+
+		if (typeof callbacks['global'][fn] == 'function'){
+			if (constraints.master && state['current'] == 'master'){
+				callbacks['global'][fn].apply(null, params);
+			}
+
+			if (constraints.slave && state['current'] == 'slave'){
+				callbacks['global'][fn].apply(null, params);
 			}
 		}
 	};
@@ -211,6 +255,7 @@ syncTab = function(_callbacks){
 
 			if ((current_ts - master_ts) > master_latency){
 				console.debug('Master is not responding. I\'m taking over!');
+
 				self.kick_master(current_ts);
 			}
 		}
@@ -228,4 +273,26 @@ syncTab = function(_callbacks){
 	self.init();
 };
 
-synctab = new syncTab();
+synctab = new syncTab({
+	'master': {
+		'register': function(){
+			console.log('master register');
+		}
+	},
+	'slave':{
+		'register': function(){
+			console.log('slave register');
+		},
+		'unregister': function(){
+			console.log('slave unregister');
+		}
+	},
+	'global': {
+		'message': function(msg){
+			console.log(msg);
+		},
+		'get_ts': function(){
+			console.log(+new Date());
+		}
+	}
+});
