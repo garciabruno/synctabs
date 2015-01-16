@@ -28,12 +28,15 @@ syncTab = function(_callbacks){
 		'last_id': null
 	};
 
+	var executed_queue = [];
+
 	var keys = {
 		'master_id': 'synctab_master_id',
 		'slaves_ids': 'synctab_slaves_ids',
 		'last_master_ts': 'synctab_master_last_ts',
 		'last_id': 'synctab_last_id',
-		'last_id_ts_': 'synctab_id_last_ts_'
+		'last_id_ts_': 'synctab_id_last_ts_',
+		'queue': 'synctab_queue'
 	};
 
 	var latency = 1000;
@@ -76,7 +79,7 @@ syncTab = function(_callbacks){
 	};
 
 	this.get_slaves = function(){
-		return JSON.parse(self.get_key('slaves_ids'));
+		return JSON.parse(self.get_key('slaves_ids')) || [];
 	};
 
 	this.become_master = function(){
@@ -120,7 +123,7 @@ syncTab = function(_callbacks){
 		state['id'] = last_id + 1;
 		state['current'] = 'slave';
 
-		if (slaves_ids == null){
+		if (slaves_ids.length == 0){
 			console.debug('I am the first slave');
 
 			slaves_ids = [state['id']];
@@ -142,7 +145,7 @@ syncTab = function(_callbacks){
 		var new_slaves = [];
 		var slaves_ids = self.get_slaves();
 
-		if (slaves_ids == null){
+		if (slaves_ids.length == 0){
 			slaves_ids = [slave_id];
 		}
 
@@ -210,7 +213,7 @@ syncTab = function(_callbacks){
 			constraints = {
 				'master': true,
 				'slaves': true
-			}
+			};
 		}
 
 		if (typeof params == 'undefined'){
@@ -233,6 +236,78 @@ syncTab = function(_callbacks){
 
 	this.register_function = function(name, fn){
 		callbacks['global'][name] = fn;
+	};
+
+	this.get_queue = function(){
+		var queue = self.get_key('queue')
+
+		if (typeof queue == 'object'){
+			return [];
+		}
+		else if (queue.length > 0){
+			return JSON.parse(queue);
+		}
+		else{
+			return [];
+		}
+	};
+
+	this.process_queue_item = function(queue){
+		var new_queue = [];
+
+		for (q = 0; q < executed_queue.length; q++){
+			if (executed_queue.lastIndexOf(queue) > 0){
+				self.call(queue.name, queue.params, queue.constraints);
+				executed_queue.push(queue);
+			}
+		}
+	};
+
+	this.check_queue = function(){
+		var new_queue = [];
+		var current_ts = +new Date();
+		var queue = self.get_queue();
+
+		if (queue.length > 0){
+			for (var i = 0; i < queue.length; i++){
+				if (executed_queue.length == 0){
+					self.call(queue[i].name, queue[i].params, queue[i].constraints);
+					executed_queue.push(queue[i]);
+				}
+				else{
+					self.process_queue_item(queue[i]);
+				}
+
+				if ((current_ts - queue[i].timestamp) < slave_latency){
+					new_queue.push(queue[i]);
+				}
+			}
+
+			self.set_key('queue', JSON.stringify(new_queue));
+		}
+	};
+
+	this.add = function(name, params, constraints){
+		var queue = self.get_queue();
+		var slaves = self.get_slaves();
+		var current_ts = +new Date();
+
+		if (typeof constraints == 'undefined'){
+			constraints = {
+				'master': true,
+				'slaves': true
+			};
+		}
+
+		queue.push({
+			'name': name,
+			'params': params,
+			'timestamp': current_ts,
+			'constraints': constraints
+		});
+
+		self.set_key('queue', JSON.stringify(queue));
+		self.check_queue();
 	};
 
 	this.loop = function(){
@@ -263,6 +338,8 @@ syncTab = function(_callbacks){
 				self.kick_master(current_ts);
 			}
 		}
+
+		self.check_queue();
 	};
 
 	this.init = function(){
