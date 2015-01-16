@@ -91,16 +91,12 @@ syncTab = function(_callbacks){
 		var last_id = parseInt(self.get_key('last_id'));
 
 		if (isNaN(last_id)){
-			console.debug('No one was here before me, I am becoming id 1');
-
 			state['id'] = 1;
 
 			self.set_key('last_id', 1);
 			self.set_key('master_id', 1);
 		}
 		else{
-			console.debug('There\'s some people in here too, I am becoming id %d', last_id + 1);
-
 			state['id'] = last_id + 1;
 
 			self.set_key('last_id', last_id + 1);
@@ -116,7 +112,6 @@ syncTab = function(_callbacks){
 		var slaves_ids = self.get_slaves();
 
 		if (isNaN(last_id)){
-			console.debug('This shouln\'t had happened. No last_id, but a master is present.');
 			last_id = 0;
 		}
 
@@ -124,13 +119,9 @@ syncTab = function(_callbacks){
 		state['current'] = 'slave';
 
 		if (slaves_ids.length == 0){
-			console.debug('I am the first slave');
-
 			slaves_ids = [state['id']];
 		}
 		else{
-			console.debug('There are other slaves here, I\'ll append to them %o', slaves_ids);
-
 			slaves_ids.push(state['id']);
 		}
 
@@ -177,15 +168,12 @@ syncTab = function(_callbacks){
 		var master_ts = localStorage.getItem(keys['last_master_ts']);
 
 		if (master_ts == null){
-			console.debug('There\'s no master, I am the master now!');
 			self.become_master();
 		}
 		else if ((current_ts - master_ts) > master_latency){
-			console.debug('Master is not responding. I\'ll become master now');
 			self.become_master();
 		}
 		else{
-			console.debug('I am the new slave here');
 			self.become_slave();
 		}
 	};
@@ -199,8 +187,6 @@ syncTab = function(_callbacks){
 				var last_id_ts = self.get_key('last_id_ts_' + slaves_ids[i]);
 
 				if ((current_ts - last_id_ts) > slave_latency){
-					console.debug('slave %d is not responding, kill him.', slaves_ids[i]);
-
 					self.remove_key('last_id_ts_' + slaves_ids[i]);
 					self.remove_slave(slaves_ids[i]);
 				}
@@ -316,25 +302,17 @@ syncTab = function(_callbacks){
 
 		if (state['current'] == 'master'){
 			if (self.get_key('master_id') != state['id']){
-				console.debug('Looks like I am no longer the master, I\'ll just be a slave');
-
 				self.become_slave();
 				return;
 			}
 
 			self.set_key('last_master_ts', current_ts);
 			self.check_slaves();
-
-			console.debug('I am the master, therefore I refreshed my status');
 		}
 		else if(state['current'] == 'slave'){
 			self.set_key('last_id_ts_' + state['id'], current_ts);
 
-			console.debug('I am slave id %d, therefore I refreshed my status', state['id']);
-
 			if ((current_ts - master_ts) > master_latency){
-				console.debug('Master is not responding. I\'m taking over!');
-
 				self.kick_master(current_ts);
 			}
 		}
@@ -343,7 +321,6 @@ syncTab = function(_callbacks){
 	};
 
 	this.init = function(){
-		console.log('synctabs.js init');
 		self.get_master_status();
 
 		setInterval(function(){
@@ -353,27 +330,3 @@ syncTab = function(_callbacks){
 
 	self.init();
 };
-
-synctab = new syncTab({
-	'master': {
-		'register': function(){
-			console.log('master register');
-		}
-	},
-	'slave':{
-		'register': function(){
-			console.log('slave register');
-		},
-		'unregister': function(){
-			console.log('slave unregister');
-		}
-	},
-	'global': {
-		'message': function(msg){
-			console.log(msg);
-		},
-		'get_ts': function(){
-			console.log(+new Date());
-		}
-	}
-});
