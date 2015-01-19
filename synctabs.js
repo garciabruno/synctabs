@@ -256,11 +256,13 @@ syncTab = function(_callbacks){
 		var new_queue = [];
 
 		for (q = 0; q < executed_queue.length; q++){
-			if (executed_queue.lastIndexOf(queue) > 0){
-				self.call(queue.name, queue.params, queue.constraints);
-				executed_queue.push(queue);
+			if (executed_queue[q].timestamp == queue.timestamp){
+				return;
 			}
 		}
+
+		self.call(queue.name, queue.params, queue.constraints);
+		executed_queue.push(queue);
 	};
 
 	this.check_queue = function(){
@@ -376,4 +378,8 @@ synctab = new syncTab({
 			console.log(+new Date());
 		}
 	}
+});
+
+$('.ex_slaves_1').on('click', function(){
+	synctab.add('message', 'Hello my bitches!', {'master': false});
 });
