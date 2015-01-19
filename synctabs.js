@@ -381,5 +381,5 @@ synctab = new syncTab({
 });
 
 $('.ex_slaves_1').on('click', function(){
-	synctab.add('message', 'Hello my bitches!', {'master': false});
+	synctab.add('message', 'Hello my bitches!', {'master': false, 'slaves': true});
 });
