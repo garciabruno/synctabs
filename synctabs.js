@@ -323,10 +323,6 @@ syncTab = function(_callbacks){
 	};
 
 	this.init = function(){
-<<<<<<< HEAD
-=======
-		console.log('[debug] synctabs.js init');
->>>>>>> development
 		self.get_master_status();
 
 		setInterval(function(){
