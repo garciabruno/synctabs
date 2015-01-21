@@ -1,51 +1,15 @@
 # synctabs.js
-synctabs is a script to syncronize tabs within the same domain through work queues using browser's localstorage.
+synctabs is a javascript library for cross-window commucation
 
 ### Installation
 Include synctabs.js to your site
 
     <script src="synctabs.js"></script>
 
-## Initialization
-A syncTab object needs to be created:
-syncTab object takes as parameter an array with three elements: "master", "slave" and "global".
+## Getting started
+As simple as creating a new syncTab object
 
-"master" stores a function in an array with one element called "register", this is called when a master is registered.
-"slave" stores two functions in an array with two elements: "register" and "unregister". Their are called upon registration and unregistration.
-"global" stores an unlimited amount of functions in an arrays.
-
-
-
-    synctab = new syncTab({
-        'master': {
-            'register': function(){
-                console.log('master register');
-            }
-        },
-        'slave':{
-            'register': function(){
-                console.log('slave register');
-            },
-            'unregister': function(){
-                console.log('slave unregister');
-            }
-        },
-        'global': {
-            'message': function(msg){
-                console.log(msg);
-            },
-            'get_ts': function(){
-                console.log(+new Date());
-            }
-        }
-    });
-
-    
-## How it works
-
-When a new tab is created, a "master" or a "slave" will be created.
-If the "master" tab is killed and other tabs remain open, then one of the tabs will take the "master" status.
-If a "slave" tab is killed, the master will unregister it from the queue.
+    synctab = new syncTab();
 
 ## Usage
 Registering functions at run-time
