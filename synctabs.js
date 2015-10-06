@@ -48,8 +48,7 @@ syncTab = function(_callbacks){
     this.get_key = function(key){
         if (key.lastIndexOf('last_id_ts_') == 0){
             return localStorage.getItem(key);
-        }
-        else{
+        } else {
             return localStorage.getItem(keys[key]);
         }
     };
@@ -57,8 +56,7 @@ syncTab = function(_callbacks){
     this.set_key = function(key, value){
         if (key.lastIndexOf('last_id_ts_') == 0){
             localStorage.setItem(key, value);
-        }
-        else{
+        } else {
             localStorage.setItem(keys[key], value);
         }
     };
@@ -66,8 +64,7 @@ syncTab = function(_callbacks){
     this.remove_key = function(key){
         if (key.lastIndexOf('last_id_ts_') == 0){
             localStorage.removeItem(key);
-        }
-        else{
+        } else{
             localStorage.removeItem(keys[key]);
         }
     };
@@ -95,8 +92,7 @@ syncTab = function(_callbacks){
 
             self.set_key('last_id', 1);
             self.set_key('master_id', 1);
-        }
-        else{
+        } else {
             state['id'] = last_id + 1;
 
             self.set_key('last_id', last_id + 1);
@@ -120,8 +116,7 @@ syncTab = function(_callbacks){
 
         if (slaves_ids.length == 0){
             slaves_ids = [state['id']];
-        }
-        else{
+        } else {
             slaves_ids.push(state['id']);
         }
 
@@ -169,11 +164,9 @@ syncTab = function(_callbacks){
 
         if (master_ts == null){
             self.become_master();
-        }
-        else if ((current_ts - master_ts) > master_latency){
+        } else if ((current_ts - master_ts) > master_latency) {
             self.become_master();
-        }
-        else{
+        } else {
             self.become_slave();
         }
     };
@@ -204,8 +197,7 @@ syncTab = function(_callbacks){
 
         if (typeof params == 'undefined'){
             params = [];
-        }
-        else if (typeof params != 'object'){
+        } else if (typeof params != 'object') {
             params = [params];
         }
 
@@ -229,11 +221,9 @@ syncTab = function(_callbacks){
 
         if (typeof queue == 'object'){
             return [];
-        }
-        else if (queue.length > 0){
+        } else if (queue.length > 0) {
             return JSON.parse(queue);
-        }
-        else{
+        } else {
             return [];
         }
     };
@@ -261,8 +251,7 @@ syncTab = function(_callbacks){
                 if (executed_queue.length == 0){
                     self.call(queue[i].name, queue[i].params, queue[i].constraints);
                     executed_queue.push(queue[i]);
-                }
-                else{
+                } else {
                     self.process_queue_item(queue[i]);
                 }
 
@@ -310,8 +299,7 @@ syncTab = function(_callbacks){
 
             self.set_key('last_master_ts', current_ts);
             self.check_slaves();
-        }
-        else if(state['current'] == 'slave'){
+        } else if(state['current'] == 'slave') {
             self.set_key('last_id_ts_' + state['id'], current_ts);
 
             if ((current_ts - master_ts) > master_latency){
